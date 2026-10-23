@@ -1,0 +1,44 @@
+desktopcloth
+============
+
+A menu bar button that hides and shows the icons on your desktop.
+It flips macOS's own setting (System Settings > Desktop & Dock >
+Show Items > On Desktop), so nothing is moved or deleted.
+
+Requires macOS 13 or later. Runs on Apple silicon and Intel Macs.
+
+
+Install
+-------
+1. Drag "desktopcloth" onto the "Applications" folder in this window.
+2. Eject this disk image.
+3. Open desktopcloth from the Applications folder.
+
+
+First launch on a new Mac
+-------------------------
+The app isn't notarized by Apple, so if this disk image was downloaded
+or AirDropped, macOS blocks the first launch with a message that it
+"could not verify" the app. To allow it:
+
+1. Click Done (or OK) in that message.
+2. Open System Settings > Privacy & Security.
+3. Scroll down to the message about "desktopcloth" and click Open Anyway.
+4. Confirm, and enter your password if asked.
+
+You only need to do this once.
+
+Alternatively, run this in Terminal after copying the app:
+
+    xattr -dr com.apple.quarantine "/Applications/desktopcloth.app"
+
+
+Use
+---
+- Left-click the menu bar icon to hide or show desktop icons.
+  While desktop icons are hidden, the icon shows a cloth over the screen.
+- Right-click it for Quit.
+- To start it automatically, add it in System Settings > General >
+  Login Items & Extensions > Open at Login.
+- If you use a menu bar manager (Bartender, Ice, Thaw), it may put
+  the new icon in its hidden section. Move it out in that app's settings.
