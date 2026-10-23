@@ -4,6 +4,9 @@ A macOS menu bar button that hides and shows the icons on your desktop.
 
 Click it before a screen share, a presentation or a recording, and the files on your desktop are out of sight. Click it again to bring them back. It flips macOS's own setting (System Settings → Desktop & Dock → Show Items → On Desktop), so nothing is moved or deleted.
 
+<img width="543" height="369" alt="desktopcloth" src="https://github.com/user-attachments/assets/3bfc30bb-09ef-4f3b-9547-191812d93db5" />
+
+
 ## Requirements
 
 macOS 13 Ventura or later, on Intel or Apple Silicon. Tested on macOS 27.
