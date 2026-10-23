@@ -1,7 +1,7 @@
 # desktopcloth
 
 A macOS menu bar button that hides and shows the icons on your desktop.
-<img width="1748" height="900" alt="desktopcloth_icon" src="https://github.com/user-attachments/assets/20967639-7ad3-47c1-b31b-c72fc94ac8fc" />
+<img width="543" height="369" alt="desktopcloth_icon" src="https://github.com/user-attachments/assets/20967639-7ad3-47c1-b31b-c72fc94ac8fc" />
 
 Click it before a screen share, a presentation or a recording, and the files on your desktop are out of sight. Click it again to bring them back. It flips macOS's own setting (System Settings → Desktop & Dock → Show Items → On Desktop), so nothing is moved or deleted.
 
