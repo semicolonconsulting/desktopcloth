@@ -1,11 +1,12 @@
 // desktopcloth: a menu bar button that hides desktop icons by laying a cloth over them (see Covers.swift).
 // Nothing on the desktop or in macOS's settings changes, and quitting takes the cloth away. It runs in the
 // App Sandbox, which the Mac App Store requires.
-// Left-click covers or uncovers the icons. Right-click shows a menu with the cloth's style and Quit.
+// Left-click covers or uncovers the icons. Right-click shows a menu with the cloth's style, the privacy policy and Quit.
 import AppKit
 import os
 
 private let log = Logger(subsystem: "com.semicolonc.desktopcloth", category: "toggle")
+private let privacyPolicy = URL(string: "https://github.com/semicolonconsulting/desktopcloth/blob/main/PRIVACY.md")!
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
@@ -23,6 +24,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(item)
         }
         menu.addItem(.separator())
+        // The Mac App Store requires a privacy policy link inside the app.
+        menu.addItem(withTitle: "Privacy Policy", action: #selector(openPrivacyPolicy), keyEquivalent: "").target = self
         menu.addItem(withTitle: "Quit desktopcloth", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         return menu
     }()
@@ -64,6 +67,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func useWallpaper() { covers.style = .wallpaper }
     @objc private func useCloth() { covers.style = .cloth }
+    @objc private func openPrivacyPolicy() { NSWorkspace.shared.open(privacyPolicy) }
 
     @objc private func allowAccess() {
         if WallpaperAccess.request(suggesting: NSScreen.main.flatMap { NSWorkspace.shared.desktopImageURL(for: $0) }) {

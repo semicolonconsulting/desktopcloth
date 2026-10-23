@@ -3,7 +3,7 @@
 A macOS menu bar button that hides and shows the icons on your desktop.
 <img width="543" height="279" alt="desktopcloth_icon" src="https://github.com/user-attachments/assets/20967639-7ad3-47c1-b31b-c72fc94ac8fc" />
 
-Click it before a screen share, a presentation or a recording, and the files on your desktop are out of sight. Click it again to bring them back. It flips macOS's own setting (System Settings → Desktop & Dock → Show Items → On Desktop), so nothing is moved or deleted.
+Click it before a screen share, a presentation or a recording, and the files on your desktop are out of sight. Click it again to bring them back. desktopcloth lays a cloth over the desktop: a window that sits just above the desktop icons and below everything else, showing your wallpaper or a plain cloth. Nothing on your desktop is moved, deleted or changed.
 
 <img width="543" height="369" alt="desktopcloth" src="https://github.com/user-attachments/assets/3bfc30bb-09ef-4f3b-9547-191812d93db5" />
 
@@ -28,15 +28,32 @@ To start it automatically, add it under System Settings → General → Login It
 
 ## Usage
 
-- Click the menu bar button to hide or show desktop icons. While they're hidden, the button shows a cloth over the screen.
-- Right-click the button for **Quit desktopcloth**.
-- If you change the setting in System Settings, the button follows.
+- Click the menu bar button to cover or uncover the desktop icons. While they're covered, the button shows a cloth over the screen.
+- Right-click the button to choose what the cloth looks like:
+  - **Cover with Wallpaper** (the default): the cloth shows your wallpaper, so the desktop just looks empty.
+  - **Cover with Plain Cloth**: a calm teal fabric.
+- The right-click menu also has **Privacy Policy** and **Quit desktopcloth**. Quitting takes the cloth away. If you quit while the desktop is covered, it's covered again the next time desktopcloth opens.
 
 If you use a menu bar manager such as Bartender, Ice or Thaw, it may put the new button in its hidden section. Move it out in that app's settings.
 
+### Wallpaper access
+
+desktopcloth runs in the App Sandbox, so it can only read files you allow. The first time you cover the desktop with the wallpaper style, it asks you to choose the folder your wallpaper is in, and opens that folder for you. Click **Allow**. You only need to do this once per folder. Until then, or if you click Cancel, the plain cloth is shown instead. To allow a folder later, right-click the button and choose **Allow Access to Wallpaper…**.
+
 ## How it works
 
-The button runs `defaults write com.apple.WindowManager StandardHideDesktopIcons -bool true` (or `false`), the preference behind the System Settings switch. macOS picks it up immediately. desktopcloth has no network access and collects no data.
+Each display gets a borderless window at the level just above the desktop icons. It appears on every Space and stays put in Mission Control. The window draws the display's current wallpaper, using the same scaling as System Settings (Fill Screen, Fit to Screen, Stretch or Centre), and checks every few seconds whether the wallpaper has changed.
+
+desktopcloth doesn't change any macOS settings, has no network access and collects no data. See [PRIVACY.md](PRIVACY.md).
+
+### Limitations
+
+- While the desktop is covered, clicking it doesn't select Finder, and you can't drop files onto it.
+- Dynamic and animated wallpapers may show as a still picture, or as the plain cloth if desktopcloth can't read them.
+
+### Upgrading from 1.0
+
+Version 1.0 hid icons with macOS's own setting instead. If you hid your icons with 1.0, they stay hidden after upgrading. Turn them back on under System Settings → Desktop & Dock → Show Items → On Desktop.
 
 ## Build from source
 
@@ -48,19 +65,21 @@ cd desktopcloth
 ./build.sh
 ```
 
-`build.sh` creates `build/desktopcloth.app`, `build/desktopcloth.zip` and `build/desktopcloth-<version>.dmg`. The app is ad-hoc signed. While it makes the DMG, a Finder window opens briefly to lay out the install window, and the first run asks to let your terminal control Finder. Eject any mounted `desktopcloth` disk before building.
+`build.sh` creates `build/desktopcloth.app`, `build/desktopcloth.zip` and `build/desktopcloth-<version>.dmg`. The app is ad-hoc signed with the App Sandbox turned on. While it makes the DMG, a Finder window opens briefly to lay out the install window, and the first run asks to let your terminal control Finder. Eject any mounted `desktopcloth` disk before building.
 
 | File | What it is |
 | --- | --- |
-| `main.swift` | The menu bar app |
+| `main.swift` | The menu bar button and its menu |
+| `Covers.swift` | The cloth windows, and access to the wallpaper folder |
 | `StatusImage.swift` | The menu bar images, drawn in code |
 | `art/AppIcon.swift` | The app icon, drawn when you build |
+| `desktopcloth.entitlements` | The App Sandbox and the file access it allows |
 | `dmg/` | The DMG window background and the read-me inside the DMG |
 | `build.sh` | Builds the app, the zip and the DMG |
 
 ## Uninstall
 
-Quit desktopcloth and move it from Applications to the Trash. If you quit while icons are hidden, they stay hidden. Turn them back on under System Settings → Desktop & Dock → Show Items → On Desktop.
+Quit desktopcloth and move it from Applications to the Trash. Its settings stay in `~/Library/Containers/com.semicolonc.desktopcloth`, which you can also move to the Trash.
 
 ## License
 

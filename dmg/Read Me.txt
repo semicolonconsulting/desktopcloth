@@ -2,8 +2,8 @@ desktopcloth
 ============
 
 A menu bar button that hides and shows the icons on your desktop.
-It flips macOS's own setting (System Settings > Desktop & Dock >
-Show Items > On Desktop), so nothing is moved or deleted.
+It lays a cloth over the desktop, showing your wallpaper or a plain
+cloth, so nothing on your desktop is moved, deleted or changed.
 
 Requires macOS 13 or later. Runs on Apple silicon and Intel Macs.
 
@@ -35,10 +35,22 @@ Alternatively, run this in Terminal after copying the app:
 
 Use
 ---
-- Left-click the menu bar icon to hide or show desktop icons.
-  While desktop icons are hidden, the icon shows a cloth over the screen.
-- Right-click it for Quit.
+- Left-click the menu bar icon to cover or uncover the desktop icons.
+  While they're covered, the icon shows a cloth over the screen.
+- The first time, desktopcloth asks you to choose the folder your
+  wallpaper is in, so it can show the wallpaper on the cloth. Click
+  Allow. Until you do, it shows a plain cloth instead.
+- Right-click the icon to choose Cover with Wallpaper or Cover with
+  Plain Cloth, to read the privacy policy, or to quit. Quitting takes
+  the cloth away.
 - To start it automatically, add it in System Settings > General >
   Login Items & Extensions > Open at Login.
 - If you use a menu bar manager (Bartender, Ice, Thaw), it may put
   the new icon in its hidden section. Move it out in that app's settings.
+
+
+Upgrading from 1.0
+------------------
+Version 1.0 hid icons with macOS's own setting instead. If you hid
+your icons with 1.0, they stay hidden after upgrading. Turn them back
+on in System Settings > Desktop & Dock > Show Items > On Desktop.
