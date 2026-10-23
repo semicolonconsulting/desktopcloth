@@ -1,19 +1,28 @@
-// desktopcloth: a menu bar toggle for macOS's built-in "Show Items: On Desktop" setting.
-// Left-click hides/shows desktop icons. Right-click shows a menu with Quit.
+// desktopcloth: a menu bar button that hides desktop icons by laying a cloth over them (see Covers.swift).
+// Nothing on the desktop or in macOS's settings changes, and quitting takes the cloth away. It runs in the
+// App Sandbox, which the Mac App Store requires.
+// Left-click covers or uncovers the icons. Right-click shows a menu with the cloth's style and Quit.
 import AppKit
 import os
 
-private let domain = "com.apple.WindowManager"
-private let key = "StandardHideDesktopIcons"
 private let log = Logger(subsystem: "com.semicolonc.desktopcloth", category: "toggle")
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
-    private let settings = UserDefaults(suiteName: domain)!
     private let shownImage = statusImage(iconsHidden: false)
     private let hiddenImage = statusImage(iconsHidden: true)
+    private let covers = Covers()
+    private let wallpaperItem = NSMenuItem(title: "Cover with Wallpaper", action: #selector(useWallpaper), keyEquivalent: "")
+    private let clothItem = NSMenuItem(title: "Cover with Plain Cloth", action: #selector(useCloth), keyEquivalent: "")
+    private let accessItem = NSMenuItem(title: "Allow Access to Wallpaper…", action: #selector(allowAccess), keyEquivalent: "")
     private lazy var menu: NSMenu = {
         let menu = NSMenu()
+        menu.delegate = self
+        for item in [wallpaperItem, clothItem, accessItem] {
+            item.target = self
+            menu.addItem(item)
+        }
+        menu.addItem(.separator())
         menu.addItem(withTitle: "Quit desktopcloth", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         return menu
     }()
@@ -26,14 +35,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.action = #selector(clicked)
         statusItem.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
 
-        // Keep the icon in sync when the setting is changed elsewhere (System Settings, Shortcuts).
-        settings.addObserver(self, forKeyPath: key, options: [.new], context: nil)
+        WallpaperAccess.restore()
+        // Covers again if the icons were covered when desktopcloth last quit.
+        if UserDefaults.standard.bool(forKey: "covered") { cover() }
         refresh()
-    }
-
-    private var iconsHidden: Bool {
-        CFPreferencesAppSynchronize(domain as CFString)
-        return settings.bool(forKey: key)
     }
 
     @objc private func clicked() {
@@ -43,33 +48,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             statusItem.menu = nil
             return
         }
-        setIconsHidden(!iconsHidden)
-    }
-
-    // Same command as `defaults write`, which WindowManager picks up immediately.
-    private func setIconsHidden(_ hidden: Bool) {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/defaults")
-        task.arguments = ["write", domain, key, "-bool", hidden ? "true" : "false"]
-        do {
-            try task.run()
-            task.waitUntilExit()
-        } catch {
-            log.error("defaults write failed: \(error.localizedDescription, privacy: .public)")
-        }
+        covers.isShown ? covers.hide() : cover()
+        UserDefaults.standard.set(covers.isShown, forKey: "covered")
         refresh()
     }
 
-    private func refresh() {
-        let hidden = iconsHidden
-        statusItem.button?.image = hidden ? hiddenImage : shownImage
-        statusItem.button?.toolTip = hidden ? "Show desktop icons" : "Hide desktop icons"
-        log.info("desktop icons hidden: \(hidden, privacy: .public)")
+    private func cover() {
+        covers.show()
+        // The first time the wallpaper can't be read, ask for its folder once; the menu can ask again later.
+        if covers.wallpaperUnreadable && !UserDefaults.standard.bool(forKey: "askedForWallpaper") {
+            UserDefaults.standard.set(true, forKey: "askedForWallpaper")
+            DispatchQueue.main.async { self.allowAccess() }
+        }
     }
 
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?,
-                               change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
-        DispatchQueue.main.async { self.refresh() }
+    @objc private func useWallpaper() { covers.style = .wallpaper }
+    @objc private func useCloth() { covers.style = .cloth }
+
+    @objc private func allowAccess() {
+        if WallpaperAccess.request(suggesting: NSScreen.main.flatMap { NSWorkspace.shared.desktopImageURL(for: $0) }) {
+            covers.redraw()
+        }
+    }
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        wallpaperItem.state = covers.style == .wallpaper ? .on : .off
+        clothItem.state = covers.style == .cloth ? .on : .off
+        accessItem.isHidden = !covers.wallpaperUnreadable
+    }
+
+    private func refresh() {
+        statusItem.button?.image = covers.isShown ? hiddenImage : shownImage
+        statusItem.button?.toolTip = covers.isShown ? "Show desktop icons" : "Hide desktop icons"
+        log.info("desktop icons covered: \(self.covers.isShown, privacy: .public)")
     }
 }
 
