@@ -35,16 +35,17 @@ Alternatively, run this in Terminal after copying the app:
 
 Use
 ---
+- The first time desktopcloth opens, a welcome window shows where its
+  menu bar icon is. You can try covering the desktop from there too.
 - Left-click the menu bar icon to cover or uncover the desktop icons.
   While they're covered, the icon shows a cloth over the screen.
 - The first time, desktopcloth asks you to choose the folder your
   wallpaper is in, so it can show the wallpaper on the cloth. Click
   Allow. Until you do, it shows a plain cloth instead.
 - Right-click the icon to choose Cover with Wallpaper or Cover with
-  Plain Cloth, to read the privacy policy, or to quit. Quitting takes
-  the cloth away.
-- To start it automatically, add it in System Settings > General >
-  Login Items & Extensions > Open at Login.
+  Plain Cloth, to open the welcome window again (About desktopcloth),
+  to turn on Open at Login, to read the privacy policy, or to quit.
+  Quitting takes the cloth away.
 - If you use a menu bar manager (Bartender, Ice, Thaw), it may put
   the new icon in its hidden section. Move it out in that app's settings.
 

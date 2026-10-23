@@ -11,8 +11,8 @@ APP="build/desktopcloth.app"
 rm -rf build
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
-swiftc -O -target arm64-apple-macos13.0 -o build/desktopcloth-arm64 main.swift Covers.swift StatusImage.swift
-swiftc -O -target x86_64-apple-macos13.0 -o build/desktopcloth-x86_64 main.swift Covers.swift StatusImage.swift
+swiftc -O -target arm64-apple-macos13.0 -o build/desktopcloth-arm64 main.swift Covers.swift StatusImage.swift Welcome.swift
+swiftc -O -target x86_64-apple-macos13.0 -o build/desktopcloth-x86_64 main.swift Covers.swift StatusImage.swift Welcome.swift
 lipo -create -output "$APP/Contents/MacOS/desktopcloth" build/desktopcloth-arm64 build/desktopcloth-x86_64
 rm build/desktopcloth-arm64 build/desktopcloth-x86_64
 

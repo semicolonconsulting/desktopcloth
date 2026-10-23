@@ -10,7 +10,7 @@ Nothing. desktopcloth doesn't collect, send, share or sell any data about you or
 
 ## What stays on your Mac
 
-- **Your settings:** the cloth style you chose and whether the desktop was covered when you quit. They're stored in desktopcloth's own sandbox folder on your Mac.
+- **Your settings:** the cloth style you chose, whether the desktop was covered when you quit, and whether you've seen the welcome window. They're stored in desktopcloth's own sandbox folder on your Mac. If you turn on Open at Login, macOS keeps that in its own list of login items.
 - **Wallpaper folder access:** if you allow desktopcloth to read the folder your wallpaper is in, it keeps a bookmark to that folder so it doesn't ask again. It reads the wallpaper only to draw it on your screen. The picture never leaves your Mac.
 
 ## Deleting your data

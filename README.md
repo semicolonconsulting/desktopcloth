@@ -24,15 +24,19 @@ The app isn't notarized by Apple, so the first launch is blocked with a message 
 xattr -dr com.apple.quarantine /Applications/desktopcloth.app
 ```
 
-To start it automatically, add it under System Settings → General → Login Items & Extensions → Open at Login.
-
 ## Usage
+
+The first time desktopcloth opens, a welcome window shows where its button is. You can also cover the desktop from there with **Try It**, and turn on **Open at Login**.
 
 - Click the menu bar button to cover or uncover the desktop icons. While they're covered, the button shows a cloth over the screen.
 - Right-click the button to choose what the cloth looks like:
   - **Cover with Wallpaper** (the default): the cloth shows your wallpaper, so the desktop just looks empty.
   - **Cover with Plain Cloth**: a calm teal fabric.
-- The right-click menu also has **Privacy Policy** and **Quit desktopcloth**. Quitting takes the cloth away. If you quit while the desktop is covered, it's covered again the next time desktopcloth opens.
+- The right-click menu also has:
+  - **About desktopcloth**, which opens the welcome window again;
+  - **Open at Login**, to start desktopcloth when you log in;
+  - **Privacy Policy** and **Quit desktopcloth**.
+- Quitting takes the cloth away. If you quit while the desktop is covered, it's covered again the next time desktopcloth opens.
 
 If you use a menu bar manager such as Bartender, Ice or Thaw, it may put the new button in its hidden section. Move it out in that app's settings.
 
@@ -71,10 +75,12 @@ cd desktopcloth
 | --- | --- |
 | `main.swift` | The menu bar button and its menu |
 | `Covers.swift` | The cloth windows, and access to the wallpaper folder |
+| `Welcome.swift` | The welcome window, and Open at Login |
 | `StatusImage.swift` | The menu bar images, drawn in code |
 | `art/AppIcon.swift` | The app icon, drawn when you build |
 | `desktopcloth.entitlements` | The App Sandbox and the file access it allows |
 | `dmg/` | The DMG window background and the read-me inside the DMG |
+| `appstore/` | The Mac App Store listing text, and the script that draws its screenshots |
 | `build.sh` | Builds the app, the zip and the DMG |
 
 ## Uninstall
