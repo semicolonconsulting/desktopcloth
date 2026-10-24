@@ -42,7 +42,8 @@ final class Covers {
 
     func show() {
         isShown = true
-        rebuild()
+        rebuild(fadingIn: true)
+        fade(windows, to: 1)
         // macOS doesn't announce wallpaper changes, so check now and then while covered.
         timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in self?.redraw() }
     }
@@ -51,15 +52,31 @@ final class Covers {
         isShown = false
         timer?.invalidate()
         timer = nil
-        windows.forEach { $0.orderOut(nil) }
+        // Let go of the windows now, so covering again during the fade-out starts fresh ones.
+        let leaving = windows
         windows = []
+        fade(leaving, to: 0) { leaving.forEach { $0.orderOut(nil) } }
+    }
+
+    // Fades the cloth in or out, much as macOS fades desktop icons, or switches at once with Reduce Motion on.
+    private func fade(_ windows: [NSWindow], to alpha: CGFloat, then done: @escaping () -> Void = {}) {
+        guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else {
+            windows.forEach { $0.alphaValue = alpha }
+            return done()
+        }
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.3
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            windows.forEach { $0.animator().alphaValue = alpha }
+        }, completionHandler: done)
     }
 
     func redraw() {
         views.forEach { $0.update(style: style) }
     }
 
-    private func rebuild() {
+    // Display changes rebuild the windows straight away; covering builds them transparent, ready to fade in.
+    private func rebuild(fadingIn: Bool = false) {
         windows.forEach { $0.orderOut(nil) }
         windows = NSScreen.screens.map { screen in
             // A non-activating panel: clicking the cloth doesn't bring desktopcloth to the front.
@@ -75,6 +92,7 @@ final class Covers {
             let view = CoverView(screen: screen)
             view.update(style: style)
             panel.contentView = view
+            panel.alphaValue = fadingIn ? 0 : 1
             panel.orderFrontRegardless()
             return panel
         }
