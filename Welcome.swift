@@ -1,5 +1,5 @@
-// The welcome window, shown on first launch and from About desktopcloth in the menu. Menu-bar-only apps are easy to
-// miss, so it says where the button is, lets you try covering the desktop right away, and has the Open at Login switch.
+// The welcome window, shown on first launch and from Settings… in the menu. Menu-bar-only apps are easy to
+// miss, so it says where the button is, lets you try covering the desktop right away, and has the Open at Login and Check for Updates Automatically switches.
 // Plain AppKit: SwiftUI's @State needs a compiler plugin that only ships with Xcode, and build.sh only needs the
 // Command Line Tools.
 import AppKit
@@ -34,6 +34,9 @@ final class WelcomeWindow: NSObject, NSWindowDelegate {
     private let isCovered: () -> Bool
     private let toggleCover: () -> Void
     private let loginBox = NSButton(checkboxWithTitle: "Open at Login", target: nil, action: nil)
+    #if !APPSTORE
+    private let updatesBox = NSButton(checkboxWithTitle: "Check for Updates Automatically", target: nil, action: nil)
+    #endif
     private let tryButton = NSButton(title: "", target: nil, action: nil)
 
     init(isCovered: @escaping () -> Bool, toggleCover: @escaping () -> Void) {
@@ -41,8 +44,10 @@ final class WelcomeWindow: NSObject, NSWindowDelegate {
         self.toggleCover = toggleCover
     }
 
-    func show() {
+    // The menu's Settings… opens it too, under its own title.
+    func show(title: String = "Welcome to desktopcloth") {
         let window = preparedWindow()
+        window.title = title
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
@@ -64,6 +69,9 @@ final class WelcomeWindow: NSObject, NSWindowDelegate {
 
     private func update() {
         loginBox.state = LoginItem.isEnabled ? .on : .off
+        #if !APPSTORE
+        updatesBox.state = Updates.checksAutomatically ? .on : .off
+        #endif
         tryButton.title = isCovered() ? "Uncover Desktop" : "Try It: Cover Desktop"
     }
 
@@ -71,6 +79,10 @@ final class WelcomeWindow: NSObject, NSWindowDelegate {
         LoginItem.set(loginBox.state == .on)
         update()
     }
+
+    #if !APPSTORE
+    @objc private func toggleUpdates() { Updates.checksAutomatically = updatesBox.state == .on }
+    #endif
 
     @objc private func tryIt() {
         toggleCover()
@@ -118,7 +130,17 @@ final class WelcomeWindow: NSObject, NSWindowDelegate {
         doneButton.keyEquivalent = "\r"
         let spacer = NSView()
         spacer.setContentHuggingPriority(.init(1), for: .horizontal)
-        let controls = NSStackView(views: [loginBox, spacer, tryButton, doneButton])
+        var settings: [NSView] = [loginBox]
+        #if !APPSTORE
+        updatesBox.target = self
+        updatesBox.action = #selector(toggleUpdates)
+        settings.append(updatesBox)
+        #endif
+        let checkboxes = NSStackView(views: settings)
+        checkboxes.orientation = .vertical
+        checkboxes.alignment = .leading
+        checkboxes.spacing = 8
+        let controls = NSStackView(views: [checkboxes, spacer, tryButton, doneButton])
 
         let privacy = NSButton(title: "Privacy Policy", target: self, action: #selector(openPrivacyPolicy))
         privacy.isBordered = false

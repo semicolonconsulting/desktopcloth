@@ -24,7 +24,7 @@ enum Updates {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
     }
 
-    // On unless the user turned it off in the menu.
+    // On unless the user turned it off in Settings (the welcome window).
     static var checksAutomatically: Bool {
         get { UserDefaults.standard.object(forKey: automaticKey) as? Bool ?? true }
         set {

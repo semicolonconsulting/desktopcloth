@@ -78,9 +78,9 @@ Answer **None** (or **No**) to every question. The result is 4+.
 
 desktopcloth is a menu bar app with no Dock icon. On first launch it opens a welcome window that explains how it works.
 
-To test without looking for the menu bar button, click "Try It: Cover Desktop" in the welcome window. The desktop icons are covered by a window that shows the wallpaper, or a plain teal cloth. Click "Uncover Desktop" to take it away. The welcome window can be reopened from the menu (About desktopcloth).
+To test without looking for the menu bar button, click "Try It: Cover Desktop" in the welcome window. The desktop icons are covered by a window that shows the wallpaper, or a plain teal cloth. Click "Uncover Desktop" to take it away. The welcome window can be reopened from the menu (Settings…).
 
-The menu bar button is a small screen icon. Left-click covers or uncovers the desktop. Right-click shows the menu: About desktopcloth, Cover with Wallpaper, Cover with Plain Cloth, Open at Login, Privacy Policy, and Quit desktopcloth.
+The menu bar button is a small screen icon. Left-click covers or uncovers the desktop. Right-click shows the menu: Settings…, Cover with Wallpaper, Cover with Plain Cloth, Open at Login, Privacy Policy, and Quit desktopcloth.
 
 How it works: one borderless window per display, at the window level just above the desktop icons (CGWindowLevelForKey(.desktopIconWindow) + 1), on all Spaces. It doesn't change any macOS settings or touch any files, and quitting removes it.
 
