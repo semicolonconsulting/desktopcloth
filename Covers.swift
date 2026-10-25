@@ -1,5 +1,6 @@
 // The cloth: one borderless window per display, just above the desktop icons and below every other window.
 // It draws the display's wallpaper, so the desktop looks empty, or a plain cloth when the wallpaper can't be read.
+// The windows stay drawn and up to date while hidden, so covering only has to fade them in.
 import AppKit
 import os
 
@@ -12,7 +13,7 @@ enum CoverStyle: String {
 final class Covers {
     private(set) var isShown = false
     private var windows: [NSWindow] = []
-    private var timer: Timer?
+    private var displays = "" // the screens the windows were made for
 
     var style: CoverStyle {
         get { CoverStyle(rawValue: UserDefaults.standard.string(forKey: "coverStyle") ?? "") ?? .wallpaper }
@@ -29,7 +30,7 @@ final class Covers {
     init() {
         let center = NotificationCenter.default, workspace = NSWorkspace.shared.notificationCenter
         center.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
-            if self?.isShown == true { self?.rebuild() }
+            self?.redraw()
         }
         // Each Space can have its own wallpaper.
         workspace.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
@@ -38,24 +39,29 @@ final class Covers {
         workspace.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
             self?.redraw()
         }
+        // macOS doesn't announce wallpaper changes, and dynamic wallpapers change through the day, so check now and then.
+        Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in self?.redraw() }
+        // The first drawing waits until after launch, when access to the wallpaper folders has been restored.
+        DispatchQueue.main.async { [weak self] in self?.redraw() }
     }
 
     func show() {
         isShown = true
-        rebuild(fadingIn: true)
+        redraw()
+        for window in windows where !window.isVisible {
+            window.alphaValue = 0
+            window.orderFrontRegardless()
+        }
         fade(windows, to: 1)
-        // macOS doesn't announce wallpaper changes, so check now and then while covered.
-        timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in self?.redraw() }
     }
 
     func hide() {
         isShown = false
-        timer?.invalidate()
-        timer = nil
-        // Let go of the windows now, so covering again during the fade-out starts fresh ones.
-        let leaving = windows
-        windows = []
-        fade(leaving, to: 0) { leaving.forEach { $0.orderOut(nil) } }
+        fade(windows, to: 0) { [weak self] in
+            // Unless it was covered again during the fade-out.
+            guard let self, !self.isShown else { return }
+            self.windows.forEach { $0.orderOut(nil) }
+        }
     }
 
     // Fades the cloth in or out, much as macOS fades desktop icons, or switches at once with Reduce Motion on.
@@ -71,12 +77,19 @@ final class Covers {
         }, completionHandler: done)
     }
 
+    // Makes sure each display has a window, drawn with the current wallpaper or cloth.
     func redraw() {
+        let displays = NSScreen.screens.map { "\($0.frame) \($0.backingScaleFactor)" }.joined(separator: ", ")
+        if displays != self.displays {
+            self.displays = displays
+            rebuild()
+        }
         views.forEach { $0.update(style: style) }
+        // Draw now, even while hidden, so the heavy work is done before any fade starts.
+        windows.forEach { $0.displayIfNeeded() }
     }
 
-    // Display changes rebuild the windows straight away; covering builds them transparent, ready to fade in.
-    private func rebuild(fadingIn: Bool = false) {
+    private func rebuild() {
         windows.forEach { $0.orderOut(nil) }
         windows = NSScreen.screens.map { screen in
             // A non-activating panel: clicking the cloth doesn't bring desktopcloth to the front.
@@ -89,14 +102,11 @@ final class Covers {
             panel.hasShadow = false
             panel.hidesOnDeactivate = false
             panel.isReleasedWhenClosed = false
-            let view = CoverView(screen: screen)
-            view.update(style: style)
-            panel.contentView = view
-            panel.alphaValue = fadingIn ? 0 : 1
-            panel.orderFrontRegardless()
+            panel.contentView = CoverView(screen: screen)
             return panel
         }
-        log.info("covering \(self.windows.count, privacy: .public) display(s)")
+        if isShown { windows.forEach { $0.orderFrontRegardless() } }
+        log.info("cloth ready for \(self.windows.count, privacy: .public) display(s)")
     }
 }
 
@@ -106,8 +116,8 @@ final class CoverView: NSView {
     private var wallpaperURL: URL?
     private var source: CGImageSource?
     private var dynamic: DynamicWallpaper?
-    private var picture = 0
-    private var wallpaper: NSImage?
+    private var rendered: CGImage? // the wallpaper picture laid out for this display, ready to draw
+    private var renderedFor = ""   // the picture and options it was laid out with
     private(set) var wallpaperUnreadable = false
 
     init(screen: NSScreen) {
@@ -119,22 +129,24 @@ final class CoverView: NSView {
 
     func update(style: CoverStyle) {
         let url = NSWorkspace.shared.desktopImageURL(for: screen)
-        var changed = style != self.style
-        if url != wallpaperURL || (wallpaper == nil && url != nil) {
+        let options = NSWorkspace.shared.desktopImageOptions(for: screen) ?? [:]
+        if url != wallpaperURL || (rendered == nil && url != nil) {
             wallpaperURL = url
             // In the App Sandbox this fails until the user has allowed access to the wallpaper's folder.
             source = url.flatMap { CGImageSourceCreateWithURL($0 as CFURL, nil) }
             dynamic = source.flatMap { DynamicWallpaper(source: $0) }
-            wallpaper = nil
+            renderedFor = ""
         }
         // A dynamic wallpaper moves on to another picture as the day goes on, so this is checked every time.
         let index = dynamic?.index(dark: effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua) ?? 0
-        if wallpaper == nil || index != picture {
-            picture = index
-            wallpaper = source.flatMap { CGImageSourceCreateImageAtIndex($0, index, nil) }.map { NSImage(cgImage: $0, size: .zero) }
+        let picture = "\(index) \(options.map { "\($0.key.rawValue)=\($0.value)" }.sorted())"
+        var changed = style != self.style
+        if picture != renderedFor {
+            renderedFor = picture
+            rendered = source.flatMap { CGImageSourceCreateImageAtIndex($0, index, nil) }.flatMap { render($0, options: options) }
             changed = true
         }
-        let unreadable = url != nil && wallpaper == nil
+        let unreadable = url != nil && rendered == nil
         if unreadable && !wallpaperUnreadable { log.info("can't read wallpaper \(url?.path ?? "", privacy: .public)") }
         wallpaperUnreadable = unreadable
         self.style = style
@@ -142,17 +154,28 @@ final class CoverView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        guard style == .wallpaper, let image = wallpaper else { return drawCloth() }
-        let options = NSWorkspace.shared.desktopImageOptions(for: screen) ?? [:]
-        (options[.fillColor] as? NSColor ?? .black).setFill()
-        bounds.fill()
-        NSGraphicsContext.current?.imageInterpolation = .high
-        image.draw(in: wallpaperRect(for: image, options: options))
+        guard style == .wallpaper, let rendered else { return drawCloth() }
+        NSGraphicsContext.current?.cgContext.draw(rendered, in: bounds)
+    }
+
+    // Lays the picture out the way macOS does, at the display's resolution and in its colour space. Keeping only this,
+    // not the full-size picture, keeps redrawing quick and memory low.
+    private func render(_ image: CGImage, options: [NSWorkspace.DesktopImageOptionKey: Any]) -> CGImage? {
+        let scale = screen.backingScaleFactor
+        let space = screen.colorSpace?.cgColorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!
+        guard let context = CGContext(data: nil, width: Int(bounds.width * scale), height: Int(bounds.height * scale),
+                                      bitsPerComponent: 8, bytesPerRow: 0, space: space,
+                                      bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue) else { return nil }
+        context.scaleBy(x: scale, y: scale)
+        context.setFillColor((options[.fillColor] as? NSColor ?? .black).cgColor)
+        context.fill(bounds)
+        context.interpolationQuality = .high
+        context.draw(image, in: wallpaperRect(pixels: NSSize(width: image.width, height: image.height), options: options))
+        return context.makeImage()
     }
 
     // Where macOS puts the wallpaper for its scaling options: Fill Screen, Fit to Screen, Stretch or Centre.
-    private func wallpaperRect(for image: NSImage, options: [NSWorkspace.DesktopImageOptionKey: Any]) -> NSRect {
-        let pixels = image.representations.first.map { NSSize(width: $0.pixelsWide, height: $0.pixelsHigh) } ?? image.size
+    private func wallpaperRect(pixels: NSSize, options: [NSWorkspace.DesktopImageOptionKey: Any]) -> NSRect {
         let scaling = (options[.imageScaling] as? NSNumber).flatMap { NSImageScaling(rawValue: $0.uintValue) }
             ?? .scaleProportionallyUpOrDown
         let clipping = (options[.allowClipping] as? NSNumber)?.boolValue ?? true
