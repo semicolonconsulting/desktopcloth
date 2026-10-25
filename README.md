@@ -34,8 +34,8 @@ The first time desktopcloth opens, a welcome window shows where its button is. Y
   - **Cover with Plain Cloth**: a calm teal fabric.
 - The right-click menu also has:
   - **About desktopcloth**, which opens the welcome window again;
-  - **Check for Updates…**, which asks GitHub whether there's a newer version and offers to download it, and **Check for Updates Automatically**, on unless you turn it off, which does that about once a week (only in the copy from GitHub: the App Store updates its copy itself);
   - **Open at Login**, to start desktopcloth when you log in;
+  - **Check for Updates…**, which asks GitHub whether there's a newer version and offers to download it, and **Check for Updates Automatically**, on unless you turn it off, which does that about once a week (only in the copy from GitHub: the App Store updates its copy itself);
   - **Privacy Policy** and **Quit desktopcloth**.
 - Quitting takes the cloth away. If you quit while the desktop is covered, it's covered again the next time desktopcloth opens.
 

@@ -1,8 +1,9 @@
 // desktopcloth: a menu bar button that hides desktop icons by laying a cloth over them (see Covers.swift).
 // Nothing on the desktop or in macOS's settings changes, and quitting takes the cloth away. It runs in the
 // App Sandbox, which the Mac App Store requires.
-// Left-click covers or uncovers the icons. Right-click shows a menu with About, Check for Updates (GitHub copy only,
-// see Updates.swift), the cloth's style, Open at Login, the privacy policy and Quit. The first launch also shows the welcome window (Welcome.swift).
+// Left-click covers or uncovers the icons. Right-click shows a menu with About, the cloth's style, Open at Login,
+// Check for Updates (GitHub copy only, see Updates.swift), the privacy policy and Quit. The first launch also shows
+// the welcome window (Welcome.swift).
 import AppKit
 import os
 
@@ -26,11 +27,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let menu = NSMenu()
         menu.delegate = self
         menu.addItem(withTitle: "About desktopcloth", action: #selector(showWelcome), keyEquivalent: "").target = self
-        #if !APPSTORE
-        menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "").target = self
-        autoUpdateItem.target = self
-        menu.addItem(autoUpdateItem)
-        #endif
         menu.addItem(.separator())
         for item in [wallpaperItem, clothItem, accessItem] {
             item.target = self
@@ -39,6 +35,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         loginItem.target = self
         menu.addItem(loginItem)
+        #if !APPSTORE
+        menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "").target = self
+        autoUpdateItem.target = self
+        menu.addItem(autoUpdateItem)
+        #endif
         menu.addItem(withTitle: "Privacy Policy", action: #selector(openPrivacyPolicy), keyEquivalent: "").target = self
         menu.addItem(withTitle: "Quit desktopcloth", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         return menu
