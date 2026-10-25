@@ -104,6 +104,9 @@ final class CoverView: NSView {
     private let screen: NSScreen
     private var style = CoverStyle.wallpaper
     private var wallpaperURL: URL?
+    private var source: CGImageSource?
+    private var dynamic: DynamicWallpaper?
+    private var picture = 0
     private var wallpaper: NSImage?
     private(set) var wallpaperUnreadable = false
 
@@ -116,15 +119,26 @@ final class CoverView: NSView {
 
     func update(style: CoverStyle) {
         let url = NSWorkspace.shared.desktopImageURL(for: screen)
+        var changed = style != self.style
         if url != wallpaperURL || (wallpaper == nil && url != nil) {
             wallpaperURL = url
             // In the App Sandbox this fails until the user has allowed access to the wallpaper's folder.
-            wallpaper = url.flatMap { NSImage(contentsOf: $0) }
-            wallpaperUnreadable = url != nil && wallpaper == nil
-            if wallpaperUnreadable { log.info("can't read wallpaper \(url?.path ?? "", privacy: .public)") }
+            source = url.flatMap { CGImageSourceCreateWithURL($0 as CFURL, nil) }
+            dynamic = source.flatMap { DynamicWallpaper(source: $0) }
+            wallpaper = nil
         }
+        // A dynamic wallpaper moves on to another picture as the day goes on, so this is checked every time.
+        let index = dynamic?.index(dark: effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua) ?? 0
+        if wallpaper == nil || index != picture {
+            picture = index
+            wallpaper = source.flatMap { CGImageSourceCreateImageAtIndex($0, index, nil) }.map { NSImage(cgImage: $0, size: .zero) }
+            changed = true
+        }
+        let unreadable = url != nil && wallpaper == nil
+        if unreadable && !wallpaperUnreadable { log.info("can't read wallpaper \(url?.path ?? "", privacy: .public)") }
+        wallpaperUnreadable = unreadable
         self.style = style
-        needsDisplay = true
+        if changed { needsDisplay = true }
     }
 
     override func draw(_ dirtyRect: NSRect) {

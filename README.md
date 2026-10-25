@@ -46,14 +46,17 @@ desktopcloth runs in the App Sandbox, so it can only read files you allow. The f
 
 ## How it works
 
-Each display gets a borderless window at the level just above the desktop icons. It appears on every Space and stays put in Mission Control. The window draws the display's current wallpaper, using the same scaling as System Settings (Fill Screen, Fit to Screen, Stretch or Centre), and checks every few seconds whether the wallpaper has changed.
+Each display gets a borderless window at the level just above the desktop icons. It appears on every Space and stays put in Mission Control. The window draws the display's current wallpaper, using the same scaling as System Settings (Fill Screen, Fit to Screen, Stretch or Centre), and checks every few seconds whether the wallpaper has changed. The cloth fades in and out, unless Reduce Motion is on.
+
+Dynamic wallpapers, such as Catalina, change picture through the day. desktopcloth shows the same picture as the desktop. For wallpapers that follow the sun, it works out where the sun is from your Mac's time zone, using that zone's main city instead of your exact location.
 
 desktopcloth doesn't change any macOS settings, has no network access and collects no data. See [PRIVACY.md](PRIVACY.md).
 
 ### Limitations
 
 - While the desktop is covered, clicking it doesn't select Finder, and you can't drop files onto it.
-- Dynamic and animated wallpapers may show as a still picture, or as the plain cloth if desktopcloth can't read them.
+- With a dynamic wallpaper, the cloth can switch scenes slightly before or after the desktop does, since it uses your time zone's city rather than your exact location. If you chose a still Light or Dark version of a dynamic wallpaper, the cloth may show another scene.
+- Animated wallpapers may show as a still picture, or as the plain cloth if desktopcloth can't read them.
 
 ### Upgrading from 1.0
 
