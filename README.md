@@ -34,6 +34,7 @@ The first time desktopcloth opens, a welcome window shows where its button is. Y
   - **Cover with Plain Cloth**: a calm teal fabric.
 - The right-click menu also has:
   - **About desktopcloth**, which opens the welcome window again;
+  - **Check for Updates…**, which asks GitHub whether there's a newer version and offers to download it, and **Check for Updates Automatically**, on unless you turn it off, which does that about once a week (only in the copy from GitHub: the App Store updates its copy itself);
   - **Open at Login**, to start desktopcloth when you log in;
   - **Privacy Policy** and **Quit desktopcloth**.
 - Quitting takes the cloth away. If you quit while the desktop is covered, it's covered again the next time desktopcloth opens.
@@ -50,7 +51,7 @@ Each display gets a borderless window at the level just above the desktop icons.
 
 Dynamic wallpapers, such as Catalina, change picture through the day. desktopcloth shows the same picture as the desktop. For wallpapers that follow the sun, it works out where the sun is from your Mac's time zone, using that zone's main city instead of your exact location.
 
-desktopcloth doesn't change any macOS settings, has no network access and collects no data. See [PRIVACY.md](PRIVACY.md).
+desktopcloth doesn't change any macOS settings and collects no data. The only network access is Check for Updates in the copy from GitHub, which asks GitHub for the latest release about once a week (you can turn that off in the menu). The Mac App Store copy has no network access at all. See [PRIVACY.md](PRIVACY.md).
 
 ### Limitations
 
@@ -72,19 +73,21 @@ cd desktopcloth
 ./build.sh
 ```
 
-`build.sh` creates `build/desktopcloth.app`, `build/desktopcloth.zip` and `build/desktopcloth-<version>.dmg`. The app is ad-hoc signed with the App Sandbox turned on. While it makes the DMG, a Finder window opens briefly to lay out the install window, and the first run asks to let your terminal control Finder. Eject any mounted `desktopcloth` disk before building.
+`build.sh` creates `build/desktopcloth.app`, `build/desktopcloth.zip` and `build/desktopcloth-<version>.dmg`. The app is ad-hoc signed with the App Sandbox turned on. `./build.sh --appstore` builds only the app, for the Mac App Store: it leaves out Check for Updates, since the App Store updates the app, and has no network access. While it makes the DMG, a Finder window opens briefly to lay out the install window, and the first run asks to let your terminal control Finder. Eject any mounted `desktopcloth` disk before building.
 
 | File | What it is |
 | --- | --- |
 | `main.swift` | The menu bar button and its menu |
 | `Covers.swift` | The cloth windows, and access to the wallpaper folder |
 | `Welcome.swift` | The welcome window, and Open at Login |
+| `Updates.swift` | Check for Updates, against GitHub Releases (not in the App Store build) |
 | `StatusImage.swift` | The menu bar images, drawn in code |
 | `art/AppIcon.swift` | The app icon, drawn when you build |
-| `desktopcloth.entitlements` | The App Sandbox and the file access it allows |
+| `desktopcloth.entitlements` | The App Sandbox and the file access it allows (Mac App Store build) |
+| `desktopcloth-github.entitlements` | The same, plus network access for Check for Updates (GitHub build) |
 | `dmg/` | The DMG window background and the read-me inside the DMG |
 | `appstore/` | The Mac App Store listing text, and the script that draws its screenshots |
-| `build.sh` | Builds the app, the zip and the DMG |
+| `build.sh` | Builds the app, the zip and the DMG, or with `--appstore` the App Store app |
 
 ## Uninstall
 

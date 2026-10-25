@@ -4,15 +4,26 @@
 # To install the result: quit the running app, then copy build/desktopcloth.app to ~/Applications or /Applications.
 # For other Macs, share build/desktopcloth-<version>.dmg. Making it briefly opens a Finder window, and the first
 # run asks to let your terminal control Finder.
+# ./build.sh --appstore builds only the app, for the Mac App Store: without Check for Updates (the App Store updates
+# it) and without network access. Sign that build/desktopcloth.app with your distribution certificate to upload it.
 set -e
 cd "${0:A:h}"
+
+SOURCES=(main.swift Covers.swift DynamicWallpaper.swift StatusImage.swift Welcome.swift Updates.swift)
+if [[ $1 == --appstore ]]; then
+  FLAGS=(-D APPSTORE)
+  ENTITLEMENTS=desktopcloth.entitlements
+else
+  FLAGS=()
+  ENTITLEMENTS=desktopcloth-github.entitlements
+fi
 
 APP="build/desktopcloth.app"
 rm -rf build
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
-swiftc -O -target arm64-apple-macos13.0 -o build/desktopcloth-arm64 main.swift Covers.swift DynamicWallpaper.swift StatusImage.swift Welcome.swift
-swiftc -O -target x86_64-apple-macos13.0 -o build/desktopcloth-x86_64 main.swift Covers.swift DynamicWallpaper.swift StatusImage.swift Welcome.swift
+swiftc -O $FLAGS -target arm64-apple-macos13.0 -o build/desktopcloth-arm64 $SOURCES
+swiftc -O $FLAGS -target x86_64-apple-macos13.0 -o build/desktopcloth-x86_64 $SOURCES
 lipo -create -output "$APP/Contents/MacOS/desktopcloth" build/desktopcloth-arm64 build/desktopcloth-x86_64
 rm build/desktopcloth-arm64 build/desktopcloth-x86_64
 
@@ -23,8 +34,12 @@ build/AppIcon "$APP/Contents/Resources/AppIcon.icns"
 rm build/AppIcon
 
 # Ad-hoc signature: enough to run on your own Macs (first launch elsewhere needs Privacy & Security → Open Anyway).
-# desktopcloth.entitlements turns on the App Sandbox.
-codesign --force --sign - --entitlements desktopcloth.entitlements "$APP"
+# The entitlements turn on the App Sandbox.
+codesign --force --sign - --entitlements $ENTITLEMENTS "$APP"
+if [[ $1 == --appstore ]]; then
+  echo "Built $APP for the Mac App Store"
+  exit 0
+fi
 ditto -c -k --keepParent "$APP" "build/desktopcloth.zip"
 
 # DMG: the app, an Applications link to drag it onto and the read-me, with the app icon as the volume icon.
