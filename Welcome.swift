@@ -93,7 +93,7 @@ final class WelcomeWindow: NSObject, NSWindowDelegate {
     @objc private func openPrivacyPolicy() { NSWorkspace.shared.open(privacyPolicyURL) }
 
     private func makeWindow() -> NSWindow {
-        let width: CGFloat = 480, inset: CGFloat = 24
+        let width: CGFloat = 540, inset: CGFloat = 24
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
 
         let icon = NSImageView(image: NSApp.applicationIconImage)
@@ -140,6 +140,8 @@ final class WelcomeWindow: NSObject, NSWindowDelegate {
         checkboxes.orientation = .vertical
         checkboxes.alignment = .leading
         checkboxes.spacing = 8
+        // The spacer gives way first, so the checkbox titles are never cut short.
+        checkboxes.setContentCompressionResistancePriority(.required, for: .horizontal)
         let controls = NSStackView(views: [checkboxes, spacer, tryButton, doneButton])
 
         let privacy = NSButton(title: "Privacy Policy", target: self, action: #selector(openPrivacyPolicy))
