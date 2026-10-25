@@ -35,7 +35,7 @@ The first time desktopcloth opens, a welcome window shows where its button is. Y
 - The right-click menu also has:
   - **Settings…**, which opens the welcome window again, with Open at Login and Check for Updates Automatically;
   - **Open at Login**, to start desktopcloth when you log in;
-  - **Check for Updates…**, which asks GitHub whether there's a newer version and offers to download it; unless you turn off **Check for Updates Automatically** in Settings, it also checks about once a week (only in the copy from GitHub: the App Store updates its copy itself);
+  - **Check for Updates…**, which asks GitHub whether there's a newer version and offers to download it; unless you turn off **Check for Updates Automatically**, here or in Settings, it also checks about once a week (only in the copy from GitHub: the App Store updates its copy itself);
   - **Privacy Policy** and **Quit desktopcloth**.
 - Quitting takes the cloth away. If you quit while the desktop is covered, it's covered again the next time desktopcloth opens.
 
@@ -51,7 +51,7 @@ Each display gets a borderless window at the level just above the desktop icons.
 
 Dynamic wallpapers, such as Catalina, change picture through the day. desktopcloth shows the same picture as the desktop. For wallpapers that follow the sun, it works out where the sun is from your Mac's time zone, using that zone's main city instead of your exact location.
 
-desktopcloth doesn't change any macOS settings and collects no data. The only network access is Check for Updates in the copy from GitHub, which asks GitHub for the latest release about once a week (you can turn that off in Settings). The Mac App Store copy has no network access at all. See [PRIVACY.md](PRIVACY.md).
+desktopcloth doesn't change any macOS settings and collects no data. The only network access is Check for Updates in the copy from GitHub, which asks GitHub for the latest release about once a week (you can turn that off in the menu or in Settings). The Mac App Store copy has no network access at all. See [PRIVACY.md](PRIVACY.md).
 
 ### Limitations
 

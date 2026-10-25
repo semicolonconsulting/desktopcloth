@@ -48,7 +48,7 @@ Use
   Quitting takes the cloth away.
 - To get new versions, right-click the icon and choose Check for
   Updates. desktopcloth also checks about once a week; turn off Check
-  for Updates Automatically in Settings to stop that.
+  for Updates Automatically in the menu or Settings to stop that.
 - If you use a menu bar manager (Bartender, Ice, Thaw), it may put
   the new icon in its hidden section. Move it out in that app's settings.
 

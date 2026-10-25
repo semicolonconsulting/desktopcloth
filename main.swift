@@ -1,9 +1,9 @@
 // desktopcloth: a menu bar button that hides desktop icons by laying a cloth over them (see Covers.swift).
 // Nothing on the desktop or in macOS's settings changes, and quitting takes the cloth away. It runs in the
 // App Sandbox, which the Mac App Store requires.
-// Left-click covers or uncovers the icons. Right-click shows a menu with Settings (the welcome window), the cloth's style, Open at Login,
-// Check for Updates (GitHub copy only, see Updates.swift), the privacy policy and Quit. The first launch also shows
-// the welcome window (Welcome.swift).
+// Left-click covers or uncovers the icons. Right-click shows a menu with Settings (the welcome window), the cloth's
+// style, Open at Login, Check for Updates and its automatic switch (GitHub copy only, see Updates.swift), the privacy
+// policy and Quit. The first launch also shows the welcome window (Welcome.swift).
 import AppKit
 import os
 
@@ -20,6 +20,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let clothItem = NSMenuItem(title: "Cover with Plain Cloth", action: #selector(useCloth), keyEquivalent: "")
     private let accessItem = NSMenuItem(title: "Allow Access to Wallpaper…", action: #selector(allowAccess), keyEquivalent: "")
     private let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleOpenAtLogin), keyEquivalent: "")
+    #if !APPSTORE
+    private let autoUpdateItem = NSMenuItem(title: "Check for Updates Automatically", action: #selector(toggleAutomaticUpdates), keyEquivalent: "")
+    #endif
     private lazy var menu: NSMenu = {
         let menu = NSMenu()
         menu.delegate = self
@@ -33,6 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         loginItem.target = self
         menu.addItem(loginItem)
         #if !APPSTORE
+        autoUpdateItem.target = self
+        menu.addItem(autoUpdateItem)
         menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "").target = self
         #endif
         menu.addItem(withTitle: "Privacy Policy", action: #selector(openPrivacyPolicy), keyEquivalent: "").target = self
@@ -90,6 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func openPrivacyPolicy() { NSWorkspace.shared.open(privacyPolicyURL) }
     #if !APPSTORE
     @objc private func checkForUpdates() { Updates.check(userInitiated: true) }
+    @objc private func toggleAutomaticUpdates() { Updates.checksAutomatically.toggle() }
     #endif
 
     @objc private func allowAccess() {
@@ -103,6 +109,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         clothItem.state = covers.style == .cloth ? .on : .off
         accessItem.isHidden = !covers.wallpaperUnreadable
         loginItem.state = LoginItem.isEnabled ? .on : .off
+        #if !APPSTORE
+        autoUpdateItem.state = Updates.checksAutomatically ? .on : .off
+        #endif
     }
 
     private func refresh() {

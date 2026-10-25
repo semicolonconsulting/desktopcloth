@@ -12,7 +12,7 @@ Nothing. desktopcloth doesn't collect, send, share or sell any data about you or
 
 The copy of desktopcloth from the Mac App Store has no network access. The App Store updates it.
 
-The copy downloaded from GitHub can check for a newer version. When you choose Check for Updates, and about once a week unless you turn off Check for Updates Automatically in Settings, it asks GitHub's public API for the latest desktopcloth release. The request says only which version of desktopcloth you have. Like any web request, it reaches GitHub from your internet address; GitHub's own [privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) covers that. desktopcloth sends nothing else.
+The copy downloaded from GitHub can check for a newer version. When you choose Check for Updates, and about once a week unless you turn off Check for Updates Automatically in the menu or in Settings, it asks GitHub's public API for the latest desktopcloth release. The request says only which version of desktopcloth you have. Like any web request, it reaches GitHub from your internet address; GitHub's own [privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement) covers that. desktopcloth sends nothing else.
 
 ## What stays on your Mac
 
