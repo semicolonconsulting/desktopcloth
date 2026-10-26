@@ -96,6 +96,8 @@ if [[ $1 == --appstore ]]; then
   cp $ENTITLEMENTS build/appstore.entitlements
   /usr/libexec/PlistBuddy -c "Add com.apple.application-identifier string $TEAM_ID.$BUNDLE_ID" \
     -c "Add com.apple.developer.team-identifier string $TEAM_ID" build/appstore.entitlements
+  # The downloaded profile carries com.apple.quarantine, which App Store Connect rejects (ITMS-91109).
+  xattr -cr "$APP"
   codesign --force --sign "$APP_IDENTITY" --entitlements build/appstore.entitlements "$APP"
   rm build/appstore.entitlements
   codesign --verify --strict --deep "$APP"

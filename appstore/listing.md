@@ -1,6 +1,6 @@
 # desktopcloth: Mac App Store listing
 
-Everything to paste into App Store Connect for desktopcloth 1.2.3 (build 8). Character limits are App Store Connect's.
+Everything to paste into App Store Connect for desktopcloth 1.2.3 (build 9). Character limits are App Store Connect's.
 
 ## App information
 
