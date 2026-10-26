@@ -41,8 +41,20 @@ if [[ $1 == --appstore ]]; then
   APP_IDENTITY=$(security find-identity -v -p codesigning | grep "Apple Distribution: .*($TEAM_ID)" | head -1 | cut -d '"' -f 2)
   PKG_IDENTITY=$(security find-identity -v | grep -E "(3rd Party Mac Developer Installer|Mac Installer Distribution): .*\($TEAM_ID\)" \
     | head -1 | cut -d '"' -f 2)
-  [[ -n $APP_IDENTITY ]] || { echo "No Apple Distribution certificate for team $TEAM_ID in your keychain" >&2; exit 1; }
-  [[ -n $PKG_IDENTITY ]] || { echo "No Mac Installer Distribution certificate for team $TEAM_ID in your keychain" >&2; exit 1; }
+  # Without -v, find-identity also lists certificates macOS doesn't trust, e.g. when the Apple WWDR G3 intermediate is missing.
+  UNTRUSTED="is in your keychain but not trusted. Install https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer"
+  [[ -n $APP_IDENTITY ]] || {
+    security find-identity -p codesigning | grep -q "Apple Distribution: .*($TEAM_ID)" \
+      && echo "The Apple Distribution certificate for team $TEAM_ID $UNTRUSTED" >&2 \
+      || echo "No Apple Distribution certificate for team $TEAM_ID in your keychain" >&2
+    exit 1
+  }
+  [[ -n $PKG_IDENTITY ]] || {
+    security find-identity | grep -qE "(3rd Party Mac Developer Installer|Mac Installer Distribution): .*\($TEAM_ID\)" \
+      && echo "The Mac Installer Distribution certificate for team $TEAM_ID $UNTRUSTED" >&2 \
+      || echo "No Mac Installer Distribution certificate for team $TEAM_ID in your keychain" >&2
+    exit 1
+  }
 else
   FLAGS=()
   ENTITLEMENTS=desktopcloth-github.entitlements
