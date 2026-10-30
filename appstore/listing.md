@@ -1,6 +1,6 @@
 # desktopcloth: Mac App Store listing
 
-Everything to paste into App Store Connect for desktopcloth 1.2 (build 3). Character limits are App Store Connect's.
+Everything to paste into App Store Connect for desktopcloth 1.2.3 (build 9). Character limits are App Store Connect's.
 
 ## App information
 
@@ -92,8 +92,9 @@ There's no account, no network access, no in-app purchase and no data collection
 
 ## Before submitting
 
-1. Join the Apple Developer Program and install Xcode.
-2. In Certificates, Identifiers & Profiles, register the bundle ID `com.semicolonc.desktopcloth`.
-3. Create the app record in App Store Connect with the fields above.
-4. Build a signed App Store package. `build.sh` only makes ad-hoc builds; this step needs your Apple Distribution and Mac Installer Distribution certificates, and a provisioning profile.
-5. Upload it with Transporter or Xcode, add the screenshots, and submit for review.
+1. Install Xcode, and in Xcode → Settings → Accounts add your Apple ID. Under Manage Certificates, create an Apple Distribution and a Mac Installer Distribution certificate.
+2. In Certificates, Identifiers & Profiles, register the App ID `com.semicolonc.desktopcloth`, then create a Mac App Store provisioning profile for it and save it as `appstore/desktopcloth.provisionprofile` (git ignores it).
+3. In App Store Connect, accept the agreements (and, for a paid app, fill in tax and banking), set your EU trader status, and create the app record with the fields above.
+4. Run `./build.sh --appstore`. It makes `build/desktopcloth-<version>.pkg`, signed for the App Store.
+5. Upload it with `./appstore/upload.sh` (see the script for the API key it needs) or with Transporter. Raise `CFBundleVersion` in Info.plist before each new upload.
+6. Make the screenshots with `./build.sh` then `./appstore/screenshots.sh`, add them, pick the build, and submit for review.

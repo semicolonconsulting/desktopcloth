@@ -5,14 +5,56 @@
 # For other Macs, share build/desktopcloth-<version>.dmg. Making it briefly opens a Finder window, and the first
 # run asks to let your terminal control Finder.
 # ./build.sh --appstore builds only the app, for the Mac App Store: without Check for Updates (the App Store updates
-# it) and without network access. Sign that build/desktopcloth.app with your distribution certificate to upload it.
+# it) and without network access. It signs it with your Apple Distribution certificate and packs it into
+# build/desktopcloth-<version>.pkg, signed with your Mac Installer Distribution certificate, ready for
+# appstore/upload.sh or Transporter. That needs Xcode, both certificates in your keychain, and the app's Mac App Store
+# provisioning profile saved as appstore/desktopcloth.provisionprofile.
 set -e
 cd "${0:A:h}"
+
+TEAM_ID=C6ZRF9KM22
+BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" Info.plist)
 
 SOURCES=(main.swift Covers.swift DynamicWallpaper.swift StatusImage.swift Welcome.swift Updates.swift)
 if [[ $1 == --appstore ]]; then
   FLAGS=(-D APPSTORE)
   ENTITLEMENTS=desktopcloth.entitlements
+  PROFILE=appstore/desktopcloth.provisionprofile
+  # Check everything signing needs before building.
+  # App Store Connect only takes apps built with Xcode's SDK, so use Xcode even if the Command Line Tools are selected.
+  if [[ -z $DEVELOPER_DIR && -d /Applications/Xcode.app ]]; then
+    export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+  fi
+  xcrun --find xcodebuild &>/dev/null || { echo "Install Xcode first" >&2; exit 1; }
+  [[ -f $PROFILE ]] || {
+    echo "Download the Mac App Store provisioning profile for $BUNDLE_ID and save it as $PROFILE" >&2; exit 1
+  }
+  PROFILE_PLIST=$(mktemp)
+  security cms -D -i $PROFILE > $PROFILE_PLIST
+  PROFILE_TEAM=$(/usr/libexec/PlistBuddy -c "Print TeamIdentifier:0" $PROFILE_PLIST)
+  PROFILE_APP=$(/usr/libexec/PlistBuddy -c "Print Entitlements:com.apple.application-identifier" $PROFILE_PLIST)
+  rm $PROFILE_PLIST
+  [[ $PROFILE_TEAM == $TEAM_ID && $PROFILE_APP == $TEAM_ID.$BUNDLE_ID ]] || {
+    echo "$PROFILE is for $PROFILE_APP, not $TEAM_ID.$BUNDLE_ID" >&2; exit 1
+  }
+  # Certificate names look like "Apple Distribution: Name (TEAMID)" and "3rd Party Mac Developer Installer: Name (TEAMID)".
+  APP_IDENTITY=$(security find-identity -v -p codesigning | grep "Apple Distribution: .*($TEAM_ID)" | head -1 | cut -d '"' -f 2)
+  PKG_IDENTITY=$(security find-identity -v | grep -E "(3rd Party Mac Developer Installer|Mac Installer Distribution): .*\($TEAM_ID\)" \
+    | head -1 | cut -d '"' -f 2)
+  # Without -v, find-identity also lists certificates macOS doesn't trust, e.g. when the Apple WWDR G3 intermediate is missing.
+  UNTRUSTED="is in your keychain but not trusted. Install https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer"
+  [[ -n $APP_IDENTITY ]] || {
+    security find-identity -p codesigning | grep -q "Apple Distribution: .*($TEAM_ID)" \
+      && echo "The Apple Distribution certificate for team $TEAM_ID $UNTRUSTED" >&2 \
+      || echo "No Apple Distribution certificate for team $TEAM_ID in your keychain" >&2
+    exit 1
+  }
+  [[ -n $PKG_IDENTITY ]] || {
+    security find-identity | grep -qE "(3rd Party Mac Developer Installer|Mac Installer Distribution): .*\($TEAM_ID\)" \
+      && echo "The Mac Installer Distribution certificate for team $TEAM_ID $UNTRUSTED" >&2 \
+      || echo "No Mac Installer Distribution certificate for team $TEAM_ID in your keychain" >&2
+    exit 1
+  }
 else
   FLAGS=()
   ENTITLEMENTS=desktopcloth-github.entitlements
@@ -33,18 +75,46 @@ swiftc -O -o build/AppIcon art/AppIcon.swift
 build/AppIcon "$APP/Contents/Resources/AppIcon.icns"
 rm build/AppIcon
 
+VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Info.plist)
+
+if [[ $1 == --appstore ]]; then
+  # The SDK and Xcode keys Xcode would add; App Store Connect checks them.
+  PLIST="$APP/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Add CFBundleSupportedPlatforms array" -c "Add CFBundleSupportedPlatforms:0 string MacOSX" \
+    -c "Add DTPlatformName string macosx" \
+    -c "Add DTPlatformVersion string $(xcrun --sdk macosx --show-sdk-platform-version)" \
+    -c "Add DTSDKName string macosx$(xcrun --sdk macosx --show-sdk-version)" \
+    -c "Add DTSDKBuild string $(xcrun --sdk macosx --show-sdk-build-version)" \
+    -c "Add DTPlatformBuild string $(xcrun --sdk macosx --show-sdk-build-version)" \
+    -c "Add DTXcode string $(xcodebuild -version | awk '/^Xcode/ {split($2, v, "."); printf "%04d", v[1] * 100 + v[2] * 10 + v[3]}')" \
+    -c "Add DTXcodeBuild string $(xcodebuild -version | awk '/Build version/ {print $3}')" \
+    -c "Add DTCompiler string com.apple.compilers.llvm.clang.1_0" \
+    -c "Add BuildMachineOSBuild string $(sw_vers -buildVersion)" "$PLIST"
+
+  # The App Store signature needs the profile inside the app and the app and team IDs in the entitlements.
+  cp $PROFILE "$APP/Contents/embedded.provisionprofile"
+  cp $ENTITLEMENTS build/appstore.entitlements
+  /usr/libexec/PlistBuddy -c "Add com.apple.application-identifier string $TEAM_ID.$BUNDLE_ID" \
+    -c "Add com.apple.developer.team-identifier string $TEAM_ID" build/appstore.entitlements
+  # The downloaded profile carries com.apple.quarantine, which App Store Connect rejects (ITMS-91109).
+  xattr -cr "$APP"
+  codesign --force --sign "$APP_IDENTITY" --entitlements build/appstore.entitlements "$APP"
+  rm build/appstore.entitlements
+  codesign --verify --strict --deep "$APP"
+
+  PKG="build/desktopcloth-$VERSION.pkg"
+  productbuild --quiet --component "$APP" /Applications --sign "$PKG_IDENTITY" "$PKG"
+  echo "Built $APP and $PKG for the Mac App Store (build $(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" Info.plist))"
+  exit 0
+fi
+
 # Ad-hoc signature: enough to run on your own Macs (first launch elsewhere needs Privacy & Security → Open Anyway).
 # The entitlements turn on the App Sandbox.
 codesign --force --sign - --entitlements $ENTITLEMENTS "$APP"
-if [[ $1 == --appstore ]]; then
-  echo "Built $APP for the Mac App Store"
-  exit 0
-fi
 ditto -c -k --keepParent "$APP" "build/desktopcloth.zip"
 
 # DMG: the app, an Applications link to drag it onto and the read-me, with the app icon as the volume icon.
 # Double-clicking it opens a window laid out over a background picture (dmg/background.swift) that says to drag.
-VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Info.plist)
 DMG="build/desktopcloth-$VERSION.dmg"
 VOLNAME="desktopcloth"
 VOL="/Volumes/$VOLNAME"
