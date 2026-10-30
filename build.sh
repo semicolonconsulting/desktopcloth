@@ -9,6 +9,11 @@
 # build/desktopcloth-<version>.pkg, signed with your Mac Installer Distribution certificate, ready for
 # appstore/upload.sh or Transporter. That needs Xcode, both certificates in your keychain, and the app's Mac App Store
 # provisioning profile saved as appstore/desktopcloth.provisionprofile.
+# ./build.sh --notarize builds the GitHub copy signed with your Developer ID Application certificate instead of
+# ad-hoc, has Apple notarize the DMG and staples the ticket, so it opens on any Mac without Open Anyway. That needs
+# Xcode, the certificate in your keychain, and a notarytool login saved once with
+#   xcrun notarytool store-credentials notary --apple-id <Apple ID> --team-id C6ZRF9KM22
+# (set NOTARY_PROFILE to use a profile with another name).
 set -e
 cd "${0:A:h}"
 
@@ -60,6 +65,18 @@ else
   ENTITLEMENTS=desktopcloth-github.entitlements
 fi
 
+if [[ $1 == --notarize ]]; then
+  if [[ -z $DEVELOPER_DIR && -d /Applications/Xcode.app ]]; then
+    export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+  fi
+  xcrun --find notarytool &>/dev/null || { echo "Install Xcode first" >&2; exit 1; }
+  NOTARY_PROFILE=${NOTARY_PROFILE:-notary}
+  # The certificate name looks like "Developer ID Application: Name (TEAMID)". Sign by its SHA-1 fingerprint:
+  # with two certificates of the same name, signing by name stops with "ambiguous".
+  DEV_IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application: .*($TEAM_ID)" | head -1 | awk '{print $2}')
+  [[ -n $DEV_IDENTITY ]] || { echo "No Developer ID Application certificate for team $TEAM_ID in your keychain" >&2; exit 1; }
+fi
+
 APP="build/desktopcloth.app"
 rm -rf build
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
@@ -108,10 +125,16 @@ if [[ $1 == --appstore ]]; then
   exit 0
 fi
 
-# Ad-hoc signature: enough to run on your own Macs (first launch elsewhere needs Privacy & Security → Open Anyway).
 # The entitlements turn on the App Sandbox.
-codesign --force --sign - --entitlements $ENTITLEMENTS "$APP"
-ditto -c -k --keepParent "$APP" "build/desktopcloth.zip"
+if [[ $1 == --notarize ]]; then
+  # Notarization needs the hardened runtime and a secure timestamp.
+  xattr -cr "$APP"
+  codesign --force --sign "$DEV_IDENTITY" --options runtime --timestamp --entitlements $ENTITLEMENTS "$APP"
+  codesign --verify --strict --verbose=2 "$APP"
+else
+  # Ad-hoc signature: enough to run on your own Macs (first launch elsewhere needs Privacy & Security → Open Anyway).
+  codesign --force --sign - --entitlements $ENTITLEMENTS "$APP"
+fi
 
 # DMG: the app, an Applications link to drag it onto and the read-me, with the app icon as the volume icon.
 # Double-clicking it opens a window laid out over a background picture (dmg/background.swift) that says to drag.
@@ -123,7 +146,12 @@ VOL="/Volumes/$VOLNAME"
 mkdir -p build/dmg/.background
 ditto "$APP" "build/dmg/desktopcloth.app"
 ln -s /Applications build/dmg/Applications
-cp "dmg/Read Me.txt" build/dmg/
+if [[ $1 == --notarize ]]; then
+  # A notarized copy opens without Open Anyway, so leave out the read-me's section about it.
+  awk '/^First launch on a new Mac$/ {skip = 1} /^Use$/ {skip = 0} !skip' "dmg/Read Me.txt" > "build/dmg/Read Me.txt"
+else
+  cp "dmg/Read Me.txt" build/dmg/
+fi
 swiftc -O -o build/background dmg/background.swift
 build/background build/background.png 1
 build/background build/background@2x.png 2
@@ -185,4 +213,26 @@ hdiutil detach -quiet "$VOL" || { sleep 2; hdiutil detach -quiet -force "$VOL"; 
 
 hdiutil convert -quiet build/rw.dmg -format UDZO -imagekey zlib-level=9 -o "$DMG"
 rm -rf build/dmg build/rw.dmg
-echo "Built $APP, build/desktopcloth.zip and $DMG"
+
+if [[ $1 == --notarize ]]; then
+  codesign --force --sign "$DEV_IDENTITY" --timestamp "$DMG"
+  # Notarizing the DMG also notarizes the app inside it. The first submission from a new certificate can take
+  # hours; if you stop waiting, Apple keeps going: check with `xcrun notarytool history --keychain-profile notary`,
+  # then run the stapler and spctl lines below by hand.
+  echo "Uploading $DMG to Apple's notary service and waiting for the result..."
+  xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+  # Stapling fails unless Apple accepted the DMG. Then `xcrun notarytool log <submission id> --keychain-profile
+  # notary` says why.
+  xcrun stapler staple "$DMG"
+  # The same ticket covers the app, so the zip gets a stapled copy too.
+  xcrun stapler staple "$APP"
+  spctl --assess --type open --context context:primary-signature --verbose "$DMG"
+  spctl --assess --type execute --verbose "$APP"
+fi
+
+ditto -c -k --keepParent "$APP" "build/desktopcloth.zip"
+if [[ $1 == --notarize ]]; then
+  echo "Built $APP, build/desktopcloth.zip and $DMG, signed with Developer ID and notarized"
+else
+  echo "Built $APP, build/desktopcloth.zip and $DMG"
+fi
