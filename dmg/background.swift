@@ -1,5 +1,6 @@
 // Draws the DMG window background: a heading, an arrow from the app to Applications, and a pointer to Read Me.
-// Usage: background <out.png> <scale>. build.sh runs it at 1x and 2x and joins the two into a Retina TIFF.
+// Usage: background <out.png> <scale> [notarized]. build.sh runs it at 1x and 2x and joins the two into a Retina TIFF.
+// With notarized, the note by Read Me leaves out the first-launch fix, which a notarized copy doesn't need.
 // Coordinates are Finder window points from the top left. Keep the icon centers in sync with build.sh.
 import AppKit
 
@@ -11,6 +12,7 @@ let readMe = NSPoint(x: 470, y: 348) // with its label, keep it above 470, where
 
 let out = URL(fileURLWithPath: CommandLine.arguments[1])
 let scale = CGFloat(Double(CommandLine.arguments[2])!)
+let notarized = CommandLine.arguments.count > 3 && CommandLine.arguments[3] == "notarized"
 
 let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size.width * scale), pixelsHigh: Int(size.height * scale),
                            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
@@ -61,9 +63,9 @@ arrow.stroke()
 NSColor.white.withAlphaComponent(0.25).setFill()
 NSRect(x: 60, y: 282, width: size.width - 120, height: 1).fill()
 let noteRight = readMe.x - iconSize / 2 - 16
-text("Mac won’t open it the first time?", size: 13, weight: .semibold,
+text(notarized ? "New to desktopcloth?" : "Mac won’t open it the first time?", size: 13, weight: .semibold,
      in: NSRect(x: 40, y: readMe.y - 20, width: noteRight - 40, height: 18), align: .right)
-text("Read Me has the one-time fix.", size: 13, weight: .regular, alpha: 0.85,
+text(notarized ? "Read Me shows how to use it." : "Read Me has the one-time fix.", size: 13, weight: .regular, alpha: 0.85,
      in: NSRect(x: 40, y: readMe.y + 1, width: noteRight - 40, height: 18), align: .right)
 
 NSGraphicsContext.current = nil

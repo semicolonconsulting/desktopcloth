@@ -153,8 +153,9 @@ else
   cp "dmg/Read Me.txt" build/dmg/
 fi
 swiftc -O -o build/background dmg/background.swift
-build/background build/background.png 1
-build/background build/background@2x.png 2
+[[ $1 == --notarize ]] && NOTE=notarized || NOTE=
+build/background build/background.png 1 $NOTE
+build/background build/background@2x.png 2 $NOTE
 tiffutil -cathidpicheck build/background.png build/background@2x.png -out build/dmg/.background/background.tiff
 rm build/background build/background.png build/background@2x.png
 
