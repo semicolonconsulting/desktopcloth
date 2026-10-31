@@ -1,12 +1,16 @@
-// Draws the app icon, a teal desktop with a cloth drawn over most of its icons, and writes it as an .icns file.
+// Draws the app icon in the Liquid Glass style and writes it as an .icns file: a navy to sky blue desktop with glass
+// icons, a sheet of frosted glass cloth drawn over most of them, and light catching the edges.
 // Usage: AppIcon <out.icns>. build.sh runs it. Coordinates are on a 1024 canvas from the top left.
 // The icns holds only PNG entries from 32 px up. macOS 27 draws the 16 and 32 px 1x entries (icp4/icp5) as noise,
 // and Finder scales the 2x entries down cleanly instead.
 import AppKit
+import CoreImage
 
-let teal = NSColor(srgbRed: 0.08, green: 0.47, blue: 0.47, alpha: 1)
+let navy = NSColor(srgbRed: 0.07, green: 0.17, blue: 0.40, alpha: 1)
+let sky = NSColor(srgbRed: 0.40, green: 0.76, blue: 0.98, alpha: 1)
+func white(_ alpha: CGFloat) -> NSColor { NSColor.white.withAlphaComponent(alpha) }
 
-// The cloth's hem: a wavy diagonal from past the top edge to past the bottom edge, before the picture is turned.
+// The cloth's hem: a wavy diagonal from past the top edge to past the bottom edge, before it's turned (see turned).
 func hem(offset: CGFloat = 0, amplitude: CGFloat = 26, phase: CGFloat = 0) -> [NSPoint] {
     let start = NSPoint(x: 820, y: 60), end = NSPoint(x: 140, y: 1000)
     let dx = end.x - start.x, dy = end.y - start.y, length = (dx * dx + dy * dy).squareRoot()
@@ -25,8 +29,34 @@ func path(through points: [NSPoint]) -> NSBezierPath {
     return path
 }
 
-func drawIcon(scale: CGFloat) {
-    let body = NSBezierPath(roundedRect: NSRect(x: 100, y: 100, width: 824, height: 824), xRadius: 185, yRadius: 185)
+// The cloth is laid out over the top left, then turned 90° clockwise about the centre (positive is clockwise on this
+// top-down canvas) to lie over the bottom left.
+func turned(_ path: NSBezierPath) -> NSBezierPath {
+    let turn = NSAffineTransform()
+    turn.translateX(by: 512, yBy: 512)
+    turn.rotate(byDegrees: 90)
+    turn.translateX(by: -512, yBy: -512)
+    let copy = path.copy() as! NSBezierPath
+    copy.transform(using: turn as AffineTransform)
+    return copy
+}
+
+// A ring just inside a rounded rect, for light catching a glass edge.
+func rim(_ rect: NSRect, radius: CGFloat, width: CGFloat) -> NSBezierPath {
+    let ring = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
+    ring.append(NSBezierPath(roundedRect: rect.insetBy(dx: width, dy: width), xRadius: radius - width, yRadius: radius - width))
+    ring.windingRule = .evenOdd
+    return ring
+}
+
+// Edge light, strongest at the top left and bottom right as on Liquid Glass. Drawn at 45°: top left to bottom right.
+func edgeLight(_ peak: CGFloat, _ low: CGFloat, _ end: CGFloat) -> NSGradient {
+    NSGradient(colors: [white(peak), white(low), white(low), white(end)], atLocations: [0, 0.4, 0.6, 1], colorSpace: .sRGB)!
+}
+
+func drawIcon(scale: CGFloat, context cg: CGContext) {
+    let frame = NSRect(x: 100, y: 100, width: 824, height: 824)
+    let body = NSBezierPath(roundedRect: frame, xRadius: 185, yRadius: 185)
 
     // Body with a soft drop shadow. Shadow offsets are in pixels and point up, so they're scaled and negated.
     NSGraphicsContext.saveGraphicsState()
@@ -35,67 +65,87 @@ func drawIcon(scale: CGFloat) {
     shadow.shadowOffset = NSSize(width: 0, height: -12 * scale)
     shadow.shadowBlurRadius = 28 * scale
     shadow.set()
-    teal.setFill()
+    navy.setFill()
     body.fill()
     NSGraphicsContext.restoreGraphicsState()
 
     NSGraphicsContext.saveGraphicsState()
     body.addClip()
 
-    // Desktop: blue-teal at the top to green-teal at the bottom.
-    NSGradient(starting: NSColor(srgbRed: 0.25, green: 0.72, blue: 0.81, alpha: 1),
-               ending: NSColor(srgbRed: 0.11, green: 0.78, blue: 0.68, alpha: 1))!
-        .draw(in: NSRect(x: 100, y: 100, width: 824, height: 824), angle: 90)
+    // Desktop: navy at the top to sky blue at the bottom, with a soft light behind the icons.
+    NSGradient(starting: navy, ending: sky)!.draw(in: frame, angle: 90)
+    let glow = NSColor(srgbRed: 0.55, green: 0.80, blue: 1.0, alpha: 1)
+    NSGradient(starting: glow.withAlphaComponent(0.3), ending: glow.withAlphaComponent(0))!
+        .draw(fromCenter: NSPoint(x: 690, y: 300), radius: 0, toCenter: NSPoint(x: 690, y: 300), radius: 360, options: [])
 
-    // The icons and cloth are drawn icons-top-left, then turned 90° clockwise (positive is clockwise on this
-    // top-down canvas): icons top right, cloth over the bottom left. The desktop's colours and shadow aren't turned.
-    let turn = NSAffineTransform()
-    turn.translateX(by: 512, yBy: 512)
-    turn.rotate(byDegrees: 90)
-    turn.translateX(by: -512, yBy: -512)
-    turn.concat()
-
-    // Desktop icons in a 3 x 3 grid.
-    NSColor.white.withAlphaComponent(0.92).setFill()
-    for row in 0..<3 {
-        for column in 0..<3 {
-            let origin = NSPoint(x: 190 + CGFloat(column) * 178, y: 190 + CGFloat(row) * 178)
-            NSBezierPath(roundedRect: NSRect(origin: origin, size: NSSize(width: 118, height: 118)),
-                         xRadius: 30, yRadius: 30).fill()
-        }
+    // Desktop icons: a 3 x 3 grid of glass tiles at the top right, raised by a soft shadow.
+    let tiles = (0..<9).map { i in
+        NSRect(x: 716 - CGFloat(i % 3) * 178, y: 190 + CGFloat(i / 3) * 178, width: 118, height: 118)
     }
+    NSGraphicsContext.saveGraphicsState()
+    let raise = NSShadow()
+    raise.shadowColor = NSColor.black.withAlphaComponent(0.18)
+    raise.shadowOffset = NSSize(width: 0, height: -6 * scale)
+    raise.shadowBlurRadius = 20 * scale
+    raise.set()
+    cg.beginTransparencyLayer(auxiliaryInfo: nil) // one shadow for the whole grid, not one per tile
+    let face = NSGradient(starting: white(0.84), ending: white(0.68))!
+    tiles.forEach { face.draw(in: NSBezierPath(roundedRect: $0, xRadius: 32, yRadius: 32), angle: 90) }
+    cg.endTransparencyLayer()
+    NSGraphicsContext.restoreGraphicsState()
+    let tileLight = edgeLight(1, 0.25, 0.7)
+    tiles.forEach { tileLight.draw(in: rim($0, radius: 32, width: 3), angle: 45) }
 
-    // The cloth, lifted off the desktop by a soft shadow along its hem.
+    // The cloth, a sheet of frosted glass: what's under it shows through, blurred and whitened. A shadow beside the
+    // hem lifts it off the desktop.
     let cloth = path(through: hem())
     cloth.line(to: NSPoint(x: 60, y: 1000))
     cloth.line(to: NSPoint(x: 1000, y: 1000))
     cloth.line(to: NSPoint(x: 1000, y: 60))
     cloth.close()
+    let sheet = turned(cloth)
+    let under = frosted(cg.makeImage()!, radius: 26 * scale)
     NSGraphicsContext.saveGraphicsState()
     let lift = NSShadow()
-    lift.shadowColor = NSColor.black.withAlphaComponent(0.25)
-    lift.shadowBlurRadius = 30 * scale
+    lift.shadowColor = NSColor(srgbRed: 0.02, green: 0.06, blue: 0.18, alpha: 0.3)
+    lift.shadowBlurRadius = 44 * scale
     lift.set()
     NSColor.white.setFill()
-    cloth.fill()
+    sheet.fill()
     NSGraphicsContext.restoreGraphicsState()
 
     NSGraphicsContext.saveGraphicsState()
-    cloth.addClip()
-    NSGradient(starting: NSColor(srgbRed: 0.99, green: 1.00, blue: 1.00, alpha: 1),
-               ending: NSColor(srgbRed: 0.80, green: 0.92, blue: 0.91, alpha: 1))!
-        .draw(from: NSPoint(x: 380, y: 480), to: NSPoint(x: 924, y: 924), options: [.drawsBeforeStartingLocation, .drawsAfterEndingLocation])
-    // Folds that follow the hem.
-    for (offset, phase) in [(CGFloat(150), CGFloat(0.12)), (310, 0.3)] {
-        let fold = path(through: hem(offset: offset, amplitude: 22, phase: phase))
-        fold.lineWidth = 12
-        fold.lineCapStyle = .round
-        teal.withAlphaComponent(0.11).setStroke()
-        fold.stroke()
+    sheet.addClip()
+    cg.saveGState()
+    cg.concatenate(cg.ctm.inverted()) // the snapshot is in pixels, from the bottom left
+    cg.draw(under, in: CGRect(x: 0, y: 0, width: under.width, height: under.height))
+    cg.restoreGState()
+    NSGradient(starting: white(0.86), ending: NSColor(srgbRed: 0.80, green: 0.89, blue: 0.99, alpha: 0.86))!
+        .draw(from: NSPoint(x: 140, y: 520), to: NSPoint(x: 560, y: 1080), options: [.drawsBeforeStartingLocation, .drawsAfterEndingLocation])
+    // Light along the hem and along two folds that follow it.
+    for (points, width, alpha) in [(hem(offset: 4), CGFloat(4), CGFloat(0.95)),
+                                   (hem(offset: 179, amplitude: 22, phase: 0.12), 5, 0.55),
+                                   (hem(offset: 339, amplitude: 22, phase: 0.3), 5, 0.55)] {
+        let line = turned(path(through: points))
+        line.lineWidth = width
+        line.lineCapStyle = .round
+        line.lineJoinStyle = .round
+        white(alpha).setStroke()
+        line.stroke()
     }
     NSGraphicsContext.restoreGraphicsState()
 
+    // Light catching the body's edge.
+    edgeLight(0.98, 0.18, 0.68).draw(in: rim(frame, radius: 185, width: 4), angle: 45)
+
     NSGraphicsContext.restoreGraphicsState()
+}
+
+// A Gaussian blur of the picture so far, for the frosted cloth.
+func frosted(_ image: CGImage, radius: CGFloat) -> CGImage {
+    let input = CIImage(cgImage: image)
+    let blurred = input.clampedToExtent().applyingGaussianBlur(sigma: radius).cropped(to: input.extent)
+    return CIContext().createCGImage(blurred, from: input.extent)!
 }
 
 func png(pixels: Int) -> Data {
@@ -107,7 +157,7 @@ func png(pixels: Int) -> Data {
     cg.translateBy(x: 0, y: CGFloat(pixels))
     cg.scaleBy(x: scale, y: -scale)
     NSGraphicsContext.current = NSGraphicsContext(cgContext: cg, flipped: true)
-    drawIcon(scale: scale)
+    drawIcon(scale: scale, context: cg)
     NSGraphicsContext.current = nil
     return rep.representation(using: .png, properties: [:])!
 }

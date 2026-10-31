@@ -1,11 +1,11 @@
-<img src="./docs/assets/icon.png" width="100px" align="left" alt="Desktopcloth icon">
+<img src="./docs/assets/app-icon.png" width="100px" align="left" alt="Desktopcloth icon">
 
 ### `Desktopcloth`
 
 [![Latest release](https://img.shields.io/github/v/release/semicolonconsulting/desktopcloth?label=release)](https://github.com/semicolonconsulting/desktopcloth/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/semicolonconsulting/desktopcloth/total.svg)](https://github.com/semicolonconsulting/desktopcloth/releases)
 [![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)](docs/guide.md#requirements)
-[![License: MIT](https://img.shields.io/badge/license-MIT-teal.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Desktopcloth hides the icons on your Mac's desktop with one click, so screen shares, presentations and recordings show only your wallpaper.
 
