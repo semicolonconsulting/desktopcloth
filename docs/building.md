@@ -31,7 +31,7 @@ Apple usually answers within minutes, but the first submission from a new certif
 | `Updates.swift` | Check for Updates, against GitHub Releases (not in the App Store build) |
 | `StatusImage.swift` | The menu bar images, drawn in code |
 | `art/AppIcon.swift` | The app icon, drawn when you build |
-| `art/readme-icon.py` | A Pillow redraw of the app icon for `docs/assets/icon.png`, so it can be updated without a Mac |
+| `art/readme-icon.py` | A Pillow redraw of the app icon for `docs/assets/app-icon.png`, so it can be updated without a Mac |
 | `desktopcloth.entitlements` | The App Sandbox and the file access it allows (Mac App Store build) |
 | `desktopcloth-github.entitlements` | The same, plus network access for Check for Updates (GitHub build) |
 | `dmg/` | The DMG window background and the read-me inside the DMG |

@@ -1,4 +1,4 @@
-<img src="./docs/assets/icon.png" width="100px" align="left" alt="Desktopcloth icon">
+<img src="./docs/assets/app-icon.png" width="100px" align="left" alt="Desktopcloth icon">
 
 ### `Desktopcloth`
 

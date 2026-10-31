@@ -1,5 +1,5 @@
-# Redraws the app icon (art/AppIcon.swift) with Pillow for docs/assets/icon.png, so the README icon can be updated
-# without a Mac: python3 art/readme-icon.py docs/assets/icon.png. Coordinates are on a 1024 canvas from the top left,
+# Redraws the app icon (art/AppIcon.swift) with Pillow for docs/assets/app-icon.png, so the README icon can be updated
+# without a Mac: python3 art/readme-icon.py docs/assets/app-icon.png. Coordinates are on a 1024 canvas from the top left,
 # drawn at 2x and scaled down. Keep it in step with AppIcon.swift.
 import sys, math
 import numpy as np
