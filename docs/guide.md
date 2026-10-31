@@ -23,7 +23,9 @@ macOS 13 Ventura or later, on Intel or Apple Silicon. Tested on macOS 27.
 2. Drag **Desktopcloth** onto the **Applications** folder in the window that opens.
 3. Open Desktopcloth from Applications.
 
-The copy from GitHub isn't notarized by Apple, so the first launch is blocked with a message that macOS "could not verify" it. To allow it, open System Settings → Privacy & Security, scroll down to the message about Desktopcloth and click **Open Anyway**. You only need to do this once. Alternatively, run:
+The copy from GitHub is signed with Developer ID and notarized by Apple, so macOS only asks once whether to open an app downloaded from the internet.
+
+A copy you build yourself with plain `./build.sh` isn't notarized. On another Mac, its first launch is blocked with a message that macOS "could not verify" it. To allow it, open System Settings → Privacy & Security, scroll down to the message about Desktopcloth and click **Open Anyway**. You only need to do this once. Alternatively, run:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/desktopcloth.app

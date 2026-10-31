@@ -41,7 +41,7 @@ Desktopcloth hides the icons on your Mac's desktop with one click, so screen sha
 
 Download the latest `.dmg` from [Releases](https://github.com/semicolonconsulting/desktopcloth/releases/latest), open it and drag Desktopcloth onto Applications. It needs macOS 13 Ventura or later, on Intel or Apple Silicon.
 
-The first launch shows a "could not verify" message, because this copy isn't notarized. See [Install](docs/guide.md#install) for the one-time fix.
+The app is signed with Developer ID and notarized by Apple, so it opens without a trip to Privacy & Security.
 
 ### Contributing
 
