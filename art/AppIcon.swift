@@ -1,10 +1,10 @@
-// Draws the app icon, a teal desktop with a cloth drawn over most of its icons, and writes it as an .icns file.
+// Draws the app icon, a blue desktop with a cloth drawn over most of its icons, and writes it as an .icns file.
 // Usage: AppIcon <out.icns>. build.sh runs it. Coordinates are on a 1024 canvas from the top left.
 // The icns holds only PNG entries from 32 px up. macOS 27 draws the 16 and 32 px 1x entries (icp4/icp5) as noise,
 // and Finder scales the 2x entries down cleanly instead.
 import AppKit
 
-let teal = NSColor(srgbRed: 0.08, green: 0.47, blue: 0.47, alpha: 1)
+let navy = NSColor(srgbRed: 0.06, green: 0.15, blue: 0.36, alpha: 1)
 
 // The cloth's hem: a wavy diagonal from past the top edge to past the bottom edge, before the picture is turned.
 func hem(offset: CGFloat = 0, amplitude: CGFloat = 26, phase: CGFloat = 0) -> [NSPoint] {
@@ -35,16 +35,16 @@ func drawIcon(scale: CGFloat) {
     shadow.shadowOffset = NSSize(width: 0, height: -12 * scale)
     shadow.shadowBlurRadius = 28 * scale
     shadow.set()
-    teal.setFill()
+    navy.setFill()
     body.fill()
     NSGraphicsContext.restoreGraphicsState()
 
     NSGraphicsContext.saveGraphicsState()
     body.addClip()
 
-    // Desktop: blue-teal at the top to green-teal at the bottom.
-    NSGradient(starting: NSColor(srgbRed: 0.25, green: 0.72, blue: 0.81, alpha: 1),
-               ending: NSColor(srgbRed: 0.11, green: 0.78, blue: 0.68, alpha: 1))!
+    // Desktop: navy at the top to sky blue at the bottom.
+    NSGradient(starting: NSColor(srgbRed: 0.07, green: 0.17, blue: 0.40, alpha: 1),
+               ending: NSColor(srgbRed: 0.40, green: 0.76, blue: 0.98, alpha: 1))!
         .draw(in: NSRect(x: 100, y: 100, width: 824, height: 824), angle: 90)
 
     // The icons and cloth are drawn icons-top-left, then turned 90° clockwise (positive is clockwise on this
@@ -83,14 +83,14 @@ func drawIcon(scale: CGFloat) {
     NSGraphicsContext.saveGraphicsState()
     cloth.addClip()
     NSGradient(starting: NSColor(srgbRed: 0.99, green: 1.00, blue: 1.00, alpha: 1),
-               ending: NSColor(srgbRed: 0.80, green: 0.92, blue: 0.91, alpha: 1))!
+               ending: NSColor(srgbRed: 0.82, green: 0.89, blue: 0.97, alpha: 1))!
         .draw(from: NSPoint(x: 380, y: 480), to: NSPoint(x: 924, y: 924), options: [.drawsBeforeStartingLocation, .drawsAfterEndingLocation])
     // Folds that follow the hem.
     for (offset, phase) in [(CGFloat(150), CGFloat(0.12)), (310, 0.3)] {
         let fold = path(through: hem(offset: offset, amplitude: 22, phase: phase))
         fold.lineWidth = 12
         fold.lineCapStyle = .round
-        teal.withAlphaComponent(0.11).setStroke()
+        navy.withAlphaComponent(0.08).setStroke()
         fold.stroke()
     }
     NSGraphicsContext.restoreGraphicsState()
